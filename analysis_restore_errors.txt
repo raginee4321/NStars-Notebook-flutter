@@ -1,8 +1,0 @@
-﻿Analyzing n_stars_notebook...                                   
-
-   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\student\presentation\pages\add_edit_student_page.dart:99:21 - deprecated_member_use
-warning - Unused import: 'package:n_stars_notebook/features/student/presentation/pages/add_edit_student_page.dart' - lib\features\student\presentation\pages\student_list_page.dart:5:8 - unused_import
-  error - Target of URI doesn't exist: 'package:n_stars_notebook/core/theme/app_theme.dart' - lib\main.dart:7:8 - uri_does_not_exist
-  error - Undefined name 'AppTheme' - lib\main.dart:27:14 - undefined_identifier
-  error - Undefined name 'AppTheme' - lib\main.dart:28:18 - undefined_identifier
-

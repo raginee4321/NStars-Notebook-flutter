@@ -1,4 +1,0 @@
-﻿Analyzing n_stars_notebook...                                   
-
-  error - Undefined name 'di' - lib\features\student\presentation\pages\student_list_page.dart:13:28 - undefined_identifier
-
