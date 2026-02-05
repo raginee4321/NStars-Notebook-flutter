@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "58549037964",
+    "project_id": "nstarstkd-b7bcf",
+    "storage_bucket": "nstarstkd-b7bcf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:58549037964:android:0c0de5aec3f9561f1004a9",
+        "android_client_info": {
+          "package_name": "com.example.nstarstkd"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNqYDM0lm2f1z8iJYvZ1xOxCCMQbMuhuE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:58549037964:android:f60574e586ec9b791004a9",
+        "android_client_info": {
+          "package_name": "com.raginee.n_stars_notebook"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNqYDM0lm2f1z8iJYvZ1xOxCCMQbMuhuE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
