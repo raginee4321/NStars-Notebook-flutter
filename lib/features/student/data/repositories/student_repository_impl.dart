@@ -37,4 +37,9 @@ class StudentRepositoryImpl implements StudentRepository {
   Future<void> updateStudent(Student student) async {
     await remoteDataSource.updateStudent(StudentModel.fromEntity(student));
   }
+
+  @override
+  Future<String> uploadProfileImage(String studentId, List<int> imageBytes, String extension) async {
+    return await remoteDataSource.uploadProfileImage(studentId, imageBytes, extension);
+  }
 }

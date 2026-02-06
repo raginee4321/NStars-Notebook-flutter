@@ -30,3 +30,10 @@ class DeleteStudent {
   DeleteStudent(this.repository);
   Future<void> call(String id) => repository.deleteStudent(id);
 }
+
+class UploadProfileImage {
+  final StudentRepository repository;
+  UploadProfileImage(this.repository);
+  Future<String> call(String studentId, List<int> imageBytes, String extension) =>
+      repository.uploadProfileImage(studentId, imageBytes, extension);
+}

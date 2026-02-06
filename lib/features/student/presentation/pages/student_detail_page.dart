@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:n_stars_notebook/features/student/presentation/bloc/student_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:n_stars_notebook/features/student/domain/entities/student.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class StudentDetailPage extends StatelessWidget {
   final Student? student;
@@ -74,12 +75,30 @@ class StudentDetailPage extends StatelessWidget {
                   Center(
                     child: Hero(
                       tag: 'avatar_${student!.id}',
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                        child: Text(
-                          student!.name.isNotEmpty ? student!.name[0].toUpperCase() : '?',
-                          style: TextStyle(fontSize: 40, color: Theme.of(context).colorScheme.primary),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                          backgroundImage: student!.profileImageUrl != null && student!.profileImageUrl!.isNotEmpty
+                              ? CachedNetworkImageProvider(student!.profileImageUrl!)
+                              : null,
+                          child: student!.profileImageUrl == null || student!.profileImageUrl!.isEmpty
+                              ? Text(
+                                  student!.name.isNotEmpty ? student!.name[0].toUpperCase() : '?',
+                                  style: TextStyle(fontSize: 48, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+                                )
+                              : null,
                         ),
                       ),
                     ),
@@ -104,48 +123,50 @@ class StudentDetailPage extends StatelessWidget {
                   _buildSectionHeader(context, "Personal Info"),
                   const SizedBox(height: 8),
                   Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         children: [
-                          _buildDetailRow(context, Icons.phone, "Phone", student!.phone),
-                          const Divider(),
-                          _buildDetailRow(context, Icons.calendar_today, "Admission Date", student!.doj),
-                          const Divider(),
-                          _buildDetailRow(context, Icons.person, "Gender", student!.gender),
+                          _buildDetailRow(context, Icons.phone_outlined, "Phone", student!.phone),
+                          const Divider(height: 24),
+                          _buildDetailRow(context, Icons.calendar_today_outlined, "Admission Date", student!.doj),
+                          const Divider(height: 24),
+                          _buildDetailRow(context, Icons.person_outline, "Gender", student!.gender),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildSectionHeader(context, "Fees History"),
-                      FilledButton.icon(
-                        onPressed: () {}, // TODO
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text("Add"),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardTheme.color,
+                  _buildSectionHeader(context, "Financials"),
+                  const SizedBox(height: 8),
+                  Card(
+                    elevation: 0,
+                    clipBehavior: Clip.antiAlias,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+                      side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
                     ),
-                    child: Column(
-                      children: [
-                         Icon(Icons.receipt_long_outlined, size: 48, color: Theme.of(context).disabledColor),
-                         const SizedBox(height: 8),
-                         Text("No transactions yet", style: TextStyle(color: Theme.of(context).disabledColor)),
-                      ],
+                    child: ListTile(
+                      onTap: () => context.push('/student/${student!.id}/fees', extra: student),
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.receipt_long, color: Theme.of(context).colorScheme.primary),
+                      ),
+                      title: const Text('Fee History', style: TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: const Text('View and manage payments'),
+                      trailing: const Icon(Icons.chevron_right),
                     ),
                   ),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),

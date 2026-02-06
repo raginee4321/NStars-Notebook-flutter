@@ -8,16 +8,22 @@ import 'package:n_stars_notebook/features/student/presentation/bloc/student_bloc
 
 import 'package:n_stars_notebook/core/supabase/supabase_client.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   
-  await SupabaseConfig.init();
+  try {
+    await dotenv.load(fileName: "assets/.env");
+    await SupabaseConfig.init();
+    await Firebase.initializeApp();
+    await di.init();
+  } catch (e) {
+    debugPrint("Initialization error: $e");
+  }
 
-  await Firebase.initializeApp();
-  await di.init();
-  
+  FlutterNativeSplash.remove();
   runApp(const MyApp());
 }
 
@@ -29,7 +35,7 @@ class MyApp extends StatelessWidget {
     return BlocProvider(
       create: (context) => di.sl<StudentBloc>()..add(LoadStudents()),
       child: MaterialApp.router(
-        title: 'N Stars TKD',
+        title: 'N Stars',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,

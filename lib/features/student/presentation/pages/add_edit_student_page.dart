@@ -5,6 +5,11 @@ import 'package:n_stars_notebook/features/student/domain/entities/student.dart';
 import 'package:n_stars_notebook/features/student/presentation/bloc/student_bloc.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:path/path.dart' as path;
+import 'package:cached_network_image/cached_network_image.dart';
 
 class AddEditStudentPage extends StatefulWidget {
   final Student? student;
@@ -22,6 +27,11 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
   String? _selectedGender;
   late TextEditingController _dojController;
   final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
+  
+  File? _selectedImage;
+  String? _currentImageUrl;
+  bool _isUploading = false;
+  final double _maxFileSizeMB = 2.0;
 
   @override
   void initState() {
@@ -30,6 +40,7 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
     _phoneController = TextEditingController(text: widget.student?.phone ?? '');
     _selectedGender = widget.student?.gender;
     _dojController = TextEditingController(text: widget.student?.doj ?? '');
+    _currentImageUrl = widget.student?.profileImageUrl;
   }
 
   @override
@@ -57,6 +68,36 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
     if (picked != null) {
       setState(() {
         _dojController.text = _dateFormat.format(picked);
+      });
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (image != null) {
+      final File file = File(image.path);
+      final int sizeInBytes = await file.length();
+      final double sizeInMb = sizeInBytes / (1024 * 1024);
+
+      if (sizeInMb > _maxFileSizeMB) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Image size exceeds ${_maxFileSizeMB}MB. Please select a smaller image.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      setState(() {
+        _selectedImage = file;
       });
     }
   }
@@ -91,6 +132,44 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      Center(
+                        child: Stack(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.2), width: 4),
+                              ),
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundColor: Colors.grey[200],
+                                backgroundImage: _selectedImage != null
+                                    ? FileImage(_selectedImage!)
+                                    : (_currentImageUrl != null && _currentImageUrl!.isNotEmpty
+                                        ? CachedNetworkImageProvider(_currentImageUrl!)
+                                        : null) as ImageProvider?,
+                                child: (_selectedImage == null && (_currentImageUrl == null || _currentImageUrl!.isEmpty))
+                                    ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                                    : null,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Material(
+                                color: Theme.of(context).primaryColor,
+                                shape: const CircleBorder(),
+                                elevation: 4,
+                                child: IconButton(
+                                  icon: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                                  onPressed: _pickImage,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
                       _buildTextField(
                         controller: _nameController,
                         label: 'Name',
@@ -138,30 +217,58 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
                       ),
                       const SizedBox(height: 32),
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: _isUploading ? null : () async {
                           if (_formKey.currentState!.validate()) {
-                            final student = Student(
-                              id: widget.student?.id ?? const Uuid().v4(),
-                              name: _nameController.text,
-                              phone: _phoneController.text,
-                              gender: _selectedGender ?? '',
-                              doj: _dojController.text,
-                            );
+                            setState(() => _isUploading = true);
+                            
+                            try {
+                              String? imageUrl = _currentImageUrl;
+                              final String studentId = widget.student?.id ?? const Uuid().v4();
 
-                            if (widget.student == null) {
-                              context.read<StudentBloc>().add(CreateStudent(student));
-                            } else {
-                              context.read<StudentBloc>().add(EditStudent(student));
-                            }
+                              if (_selectedImage != null) {
+                                final bytes = await _selectedImage!.readAsBytes();
+                                final ext = path.extension(_selectedImage!.path).replaceAll('.', '');
+                                imageUrl = await context.read<StudentBloc>().uploadProfileImage(
+                                  studentId, 
+                                  bytes, 
+                                  ext
+                                );
+                              }
 
-                            Future.delayed(const Duration(milliseconds: 300), () {
+                              final student = Student(
+                                id: studentId,
+                                name: _nameController.text,
+                                phone: _phoneController.text,
+                                gender: _selectedGender ?? '',
+                                doj: _dojController.text,
+                                profileImageUrl: imageUrl,
+                              );
+
+                              if (widget.student == null) {
+                                context.read<StudentBloc>().add(CreateStudent(student));
+                              } else {
+                                context.read<StudentBloc>().add(EditStudent(student));
+                              }
+
                               if (context.mounted) context.pop();
-                            });
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                                );
+                              }
+                            } finally {
+                              if (mounted) setState(() => _isUploading = false);
+                            }
                           }
                         },
-                        child: Text(
-                          widget.student == null ? 'Create Student' : 'Save Changes',
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
+                        child: _isUploading 
+                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : Text(widget.student == null ? 'Create Student' : 'Save Changes'),
                       ),
                     ],
                   ),

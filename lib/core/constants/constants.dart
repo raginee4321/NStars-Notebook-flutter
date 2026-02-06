@@ -2,6 +2,7 @@ class AppConstants {
   // Collections
   static const String studentsCollection = "students";
   static const String feesCollection = "fees";
+  static const String studentsBucket = "students";
 
   // Fields
   static const String fieldId = "id";

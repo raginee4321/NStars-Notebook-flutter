@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:n_stars_notebook/features/student/presentation/bloc/student_bloc.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 
 
@@ -12,7 +13,7 @@ class StudentListPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text('N Stars TKD', style: TextStyle(fontWeight: FontWeight.bold)),
+          title: const Text('N Stars', style: TextStyle(fontWeight: FontWeight.bold)),
           backgroundColor: Theme.of(context).primaryColor,
           foregroundColor: Colors.white,
           elevation: 0,
@@ -40,6 +41,24 @@ class StudentListPage extends StatelessWidget {
                     return const Center(child: CircularProgressIndicator());
                   } else if (state is StudentLoaded) {
                     final students = state.students;
+                    final query = state.searchQuery;
+
+                    if (query.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.search, size: 64, color: Colors.grey[300]),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Search for a student to view details',
+                              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
                     if (students.isEmpty) {
                       return const Center(child: Text('No students found.'));
                     }
@@ -50,27 +69,40 @@ class StudentListPage extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final student = students[index];
                         return Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
                             onTap: () {
                               context.push('/student/${student.id}', extra: student);
                             },
                             child: Padding(
-                              padding: const EdgeInsets.all(16.0),
+                              padding: const EdgeInsets.all(12.0),
                               child: Row(
                                 children: [
                                   Hero(
                                     tag: 'avatar_${student.id}',
-                                    child: CircleAvatar(
-                                      radius: 28,
-                                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                      child: Text(
-                                        student.name.isNotEmpty ? student.name[0].toUpperCase() : '?',
-                                        style: TextStyle(
-                                          color: Theme.of(context).colorScheme.primary, 
-                                          fontSize: 20, 
-                                          fontWeight: FontWeight.bold
-                                        ),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.1), width: 2),
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 35,
+                                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                        backgroundImage: student.profileImageUrl != null && student.profileImageUrl!.isNotEmpty
+                                            ? CachedNetworkImageProvider(student.profileImageUrl!)
+                                            : null,
+                                        child: (student.profileImageUrl == null || student.profileImageUrl!.isEmpty)
+                                            ? Text(
+                                                student.name.isNotEmpty ? student.name[0].toUpperCase() : '?',
+                                                style: TextStyle(
+                                                  color: Theme.of(context).colorScheme.primary, 
+                                                  fontSize: 24, 
+                                                  fontWeight: FontWeight.bold
+                                                ),
+                                              )
+                                            : null,
                                       ),
                                     ),
                                   ),
@@ -83,9 +115,27 @@ class StudentListPage extends StatelessWidget {
                                           student.name,
                                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                                         ),
-                                        Text(
-                                          student.phone,
-                                          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.phone_outlined, size: 14, color: Colors.grey[600]),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              student.phone,
+                                              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey[600]),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'DOJ: ${student.doj}',
+                                              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),

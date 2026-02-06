@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:n_stars_notebook/core/constants/constants.dart';
 import 'package:n_stars_notebook/features/student/data/models/student_model.dart';
+import 'dart:typed_data';
 
 abstract class StudentRemoteDataSource {
   Future<List<StudentModel>> getStudents();
@@ -9,6 +10,7 @@ abstract class StudentRemoteDataSource {
   Future<void> addStudent(StudentModel student);
   Future<void> updateStudent(StudentModel student);
   Future<void> deleteStudent(String id);
+  Future<String> uploadProfileImage(String studentId, List<int> imageBytes, String extension);
 }
 
 class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
@@ -63,5 +65,23 @@ class StudentRemoteDataSourceImpl implements StudentRemoteDataSource {
         .from(AppConstants.studentsCollection)
         .update(student.toJson())
         .eq('id', student.id);
+  }
+
+  @override
+  Future<String> uploadProfileImage(String studentId, List<int> imageBytes, String extension) async {
+    final fileName = '$studentId.$extension';
+    final path = '${AppConstants.profileImagesPath}/$fileName';
+
+    await supabase.storage.from(AppConstants.studentsBucket).uploadBinary(
+          path,
+          Uint8List.fromList(imageBytes),
+          fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+        );
+
+    final String publicUrl = supabase.storage
+        .from(AppConstants.studentsBucket)
+        .getPublicUrl(path);
+
+    return publicUrl;
   }
 }

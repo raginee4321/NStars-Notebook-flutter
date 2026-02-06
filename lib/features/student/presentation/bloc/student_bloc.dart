@@ -84,6 +84,7 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
   final AddStudent addStudent;
   final UpdateStudent updateStudent;
   final DeleteStudent deleteStudent;
+  final UploadProfileImage uploadProfileImageUseCase;
   StreamSubscription? _studentSubscription;
 
   StudentBloc({
@@ -92,6 +93,7 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
     required this.addStudent,
     required this.updateStudent,
     required this.deleteStudent,
+    required this.uploadProfileImageUseCase,
   }) : super(StudentInitial()) {
     
     // Listen to real-time changes
@@ -144,6 +146,10 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
         emit(StudentError(e.toString()));
       }
     });
+  }
+
+  Future<String> uploadProfileImage(String studentId, List<int> imageBytes, String extension) {
+    return uploadProfileImageUseCase.call(studentId, imageBytes, extension);
   }
 
   void _applyFilter(List<Student> allStudents, String query, Emitter<StudentState> emit) {

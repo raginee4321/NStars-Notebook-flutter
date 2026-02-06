@@ -7,4 +7,5 @@ abstract class StudentRepository {
   Future<void> addStudent(Student student);
   Future<void> updateStudent(Student student);
   Future<void> deleteStudent(String id);
+  Future<String> uploadProfileImage(String studentId, List<int> imageBytes, String extension);
 }
