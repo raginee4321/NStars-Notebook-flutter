@@ -18,3 +18,12 @@ class WatchFees {
     return repository.watchFees(studentId);
   }
 }
+
+class DeleteFee {
+  final FeeRepository repository;
+  DeleteFee(this.repository);
+
+  Future<void> call(String feeId) {
+    return repository.deleteFee(feeId);
+  }
+}

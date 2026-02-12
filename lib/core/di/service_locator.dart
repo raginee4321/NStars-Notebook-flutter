@@ -17,7 +17,7 @@ Future<void> init() async {
   // Features - Student
   // Bloc
   sl.registerFactory(
-    () => StudentBloc(
+        () => StudentBloc(
       getStudents: sl(),
       watchStudents: sl(),
       addStudent: sl(),
@@ -28,9 +28,10 @@ Future<void> init() async {
   );
 
   sl.registerFactory(
-    () => FeeBloc(
+        () => FeeBloc(
       watchFees: sl(),
       addFeeUseCase: sl(),
+      deleteFeeUseCase: sl(),
     ),
   );
 
@@ -43,21 +44,22 @@ Future<void> init() async {
   sl.registerLazySingleton(() => UploadProfileImage(sl()));
   sl.registerLazySingleton(() => AddFee(sl()));
   sl.registerLazySingleton(() => WatchFees(sl()));
+  sl.registerLazySingleton(() => DeleteFee(sl()));
 
   // Repository
   sl.registerLazySingleton<StudentRepository>(
-    () => StudentRepositoryImpl(remoteDataSource: sl()),
+        () => StudentRepositoryImpl(remoteDataSource: sl()),
   );
   sl.registerLazySingleton<FeeRepository>(
-    () => FeeRepositoryImpl(remoteDataSource: sl()),
+        () => FeeRepositoryImpl(remoteDataSource: sl()),
   );
 
   // Data sources
   sl.registerLazySingleton<StudentRemoteDataSource>(
-    () => StudentRemoteDataSourceImpl(supabase: sl()),
+        () => StudentRemoteDataSourceImpl(supabase: sl()),
   );
   sl.registerLazySingleton<FeeRemoteDataSource>(
-    () => FeeRemoteDataSourceImpl(supabase: sl()),
+        () => FeeRemoteDataSourceImpl(supabase: sl()),
   );
 
   // External

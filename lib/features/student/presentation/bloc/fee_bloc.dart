@@ -48,13 +48,15 @@ class FeeError extends FeeState {
 class FeeBloc extends Bloc<FeeEvent, FeeState> {
   final WatchFees watchFees;
   final AddFee addFeeUseCase;
+  final DeleteFee deleteFeeUseCase;
   StreamSubscription? _feesSubscription;
 
   FeeBloc({
     required this.watchFees,
     required this.addFeeUseCase,
+    required this.deleteFeeUseCase,
   }) : super(FeeInitial()) {
-    
+
     on<LoadFees>((event, emit) async {
       emit(FeeLoading());
       await _feesSubscription?.cancel();
@@ -70,6 +72,10 @@ class FeeBloc extends Bloc<FeeEvent, FeeState> {
 
   Future<void> submitFee(Fee fee) {
     return addFeeUseCase(fee);
+  }
+
+  Future<void> deleteFee(String feeId) {
+    return deleteFeeUseCase(feeId);
   }
 
   @override

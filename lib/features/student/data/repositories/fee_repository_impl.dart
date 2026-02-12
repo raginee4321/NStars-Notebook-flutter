@@ -17,4 +17,9 @@ class FeeRepositoryImpl implements FeeRepository {
   Stream<List<Fee>> watchFees(String studentId) {
     return remoteDataSource.watchFeesByStudentId(studentId);
   }
+
+  @override
+  Future<void> deleteFee(String feeId) async {
+    await remoteDataSource.deleteFee(feeId);
+  }
 }
