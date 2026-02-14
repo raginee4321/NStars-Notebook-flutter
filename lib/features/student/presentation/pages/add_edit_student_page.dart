@@ -182,6 +182,19 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
                         label: 'Phone',
                         icon: Icons.phone,
                         keyboardType: TextInputType.phone,
+                        maxLength: 10,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter a phone number';
+                          }
+                          if (value.length != 10) {
+                            return 'Phone number must be 10 digits';
+                          }
+                          if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                            return 'Phone number must contain only digits';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
@@ -287,11 +300,13 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
     required IconData icon,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    int? maxLength,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
+      maxLength: maxLength,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),

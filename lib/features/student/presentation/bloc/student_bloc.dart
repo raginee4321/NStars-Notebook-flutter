@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:n_stars_notebook/features/student/domain/entities/student.dart';
 import 'package:n_stars_notebook/features/student/domain/usecases/student_usecases.dart';
+import 'package:n_stars_notebook/core/utils/error_helpers.dart';
 
 // Events
 abstract class StudentEvent extends Equatable {
@@ -107,7 +108,7 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
         final students = await getStudents();
         emit(StudentLoaded(students, allStudents: students));
       } catch (e) {
-        emit(StudentError(e.toString()));
+        emit(StudentError(ErrorHelper.getErrorMessage(e)));
       }
     });
 
@@ -127,7 +128,7 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
       try {
         await addStudent(event.student);
       } catch (e) {
-        emit(StudentError(e.toString()));
+        emit(StudentError(ErrorHelper.getErrorMessage(e)));
       }
     });
 
@@ -135,7 +136,7 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
       try {
         await updateStudent(event.student);
       } catch (e) {
-        emit(StudentError(e.toString()));
+        emit(StudentError(ErrorHelper.getErrorMessage(e)));
       }
     });
 
@@ -143,7 +144,7 @@ class StudentBloc extends Bloc<StudentEvent, StudentState> {
       try {
         await deleteStudent(event.id);
       } catch (e) {
-        emit(StudentError(e.toString()));
+        emit(StudentError(ErrorHelper.getErrorMessage(e)));
       }
     });
   }

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:n_stars_notebook/features/student/domain/entities/student.dart';
 import 'package:n_stars_notebook/features/student/presentation/bloc/fee_bloc.dart';
 import 'package:n_stars_notebook/features/student/presentation/widgets/add_fee_dialog.dart';
+import 'package:n_stars_notebook/core/utils/error_helpers.dart';
 import 'package:n_stars_notebook/features/student/domain/entities/fee.dart';
 import 'package:n_stars_notebook/core/di/service_locator.dart';
 import 'package:intl/intl.dart';
@@ -43,8 +44,23 @@ class FeeHistoryPage extends StatelessWidget {
                     }
 
                     final totalAmount = state.fees.fold<double>(0, (sum, item) => sum + item.amount);
-                    final currentMonth = DateFormat('MMMM').format(DateTime.now());
-                    final paidThisMonth = state.fees.any((f) => f.month == currentMonth);
+                    final now = DateTime.now();
+                    final currentMonth = DateFormat('MMMM').format(now);
+                    final currentYear = now.year.toString();
+                    
+                    final paidThisMonth = state.fees.any((f) {
+                        if (f.month.contains(currentYear)) {
+                            return f.month.startsWith(currentMonth);
+                        }
+                        // Fallback for legacy data (assuming current year if no year in string?)
+                        // actually, legacy data is just "Month". If we are in Feb 2026, and legacy data is "February", 
+                        // it might be Feb 2025. We should check paymentDate year.
+                        if (!f.month.contains(RegExp(r'\d{4}'))) {
+                            final paymentDate = DateTime.parse(f.paymentDate);
+                            return f.month == currentMonth && paymentDate.year == now.year;
+                        }
+                        return false;
+                    });
 
                     return ListView(
                       padding: const EdgeInsets.all(16),
@@ -91,17 +107,41 @@ class FeeHistoryPage extends StatelessWidget {
             builder: (context) {
               return FloatingActionButton.extended(
                 onPressed: () async {
-                  final fee = await showDialog<Fee>(
+                  final state = context.read<FeeBloc>().state;
+                  List<String> paidMonths = [];
+                  if (state is FeeLoaded) {
+                    paidMonths = state.fees.map((f) {
+                      // If month already has year (e.g. "January 2025"), use it.
+                      // Otherwise append year from paymentDate
+                      if (f.month.contains(RegExp(r'\d{4}'))) {
+                        return f.month;
+                      }
+                      final date = DateTime.parse(f.paymentDate);
+                      return '${f.month} ${date.year}';
+                    }).toList();
+                  }
+
+                  final fees = await showDialog<List<Fee>>(
                     context: context,
-                    builder: (ctx) => AddFeeDialog(studentId: student.id),
+                    builder: (ctx) => AddFeeDialog(
+                      studentId: student.id,
+                      studentName: student.name,
+                      paidMonths: paidMonths,
+                      studentDoj: student.doj,
+                    ),
                   );
-                  if (fee != null && context.mounted) {
+
+                  if (fees != null && fees.isNotEmpty && context.mounted) {
                     try {
-                      await context.read<FeeBloc>().submitFee(fee);
+                      // Submit each fee sequentially
+                      for (final fee in fees) {
+                        await context.read<FeeBloc>().submitFee(fee);
+                      }
+                      
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Fee recorded successfully'),
+                          SnackBar(
+                            content: Text('${fees.map((f) => f.month).join(', ')} fees added successfully 🎉'),
                             backgroundColor: Colors.green,
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -111,7 +151,7 @@ class FeeHistoryPage extends StatelessWidget {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Error: ${e.toString()}'),
+                            content: Text(ErrorHelper.getErrorMessage(e)),
                             backgroundColor: Colors.red,
                           ),
                         );
@@ -205,13 +245,67 @@ class FeeHistoryPage extends StatelessWidget {
   }
 
   Widget _buildFeeItem(BuildContext context, Fee fee) {
+    String displayMonth = fee.month;
+    if (!displayMonth.contains(RegExp(r'\d{4}'))) {
+         try {
+             final date = DateTime.parse(fee.paymentDate);
+             displayMonth = "$displayMonth ${date.year}";
+         } catch (_) {}
+    }
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
       ),
-      child: Padding(
+      child: InkWell(
+        onLongPress: () {
+             showDialog(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: const Text('Delete Fee Record'),
+                    content: Text('Are you sure you want to delete this ${fee.month} fee record of ₹${fee.amount.toStringAsFixed(0)}?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.pop(dialogContext); // Close dialog
+                          try {
+                            await context.read<FeeBloc>().deleteFee(fee.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Fee record deleted successfully'),
+                                  backgroundColor: Colors.green,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(ErrorHelper.getErrorMessage(e)),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
@@ -229,7 +323,7 @@ class FeeHistoryPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${fee.month} Fees',
+                    displayMonth,
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 4),
@@ -261,57 +355,9 @@ class FeeHistoryPage extends StatelessWidget {
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
-            const SizedBox(width: 4),
-            IconButton(
-              icon: Icon(Icons.delete_outline, size: 20, color: Colors.red.shade400),
-              tooltip: 'Delete Record',
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (dialogContext) => AlertDialog(
-                    title: const Text('Delete Fee Record'),
-                    content: Text('Are you sure you want to delete this ${fee.month} fee record of ₹${fee.amount.toStringAsFixed(0)}?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(dialogContext),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                          Navigator.pop(dialogContext); // Close dialog
-                          try {
-                            await context.read<FeeBloc>().deleteFee(fee.id);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Fee record deleted successfully'),
-                                  backgroundColor: Colors.green,
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error deleting fee: ${e.toString()}'),
-                                  backgroundColor: Colors.red,
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            }
-                          }
-                        },
-                        style: TextButton.styleFrom(foregroundColor: Colors.red),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
           ],
         ),
+      ),
       ),
     );
   }
