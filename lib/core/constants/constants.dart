@@ -10,6 +10,9 @@ class AppConstants {
   static const String fieldDoj = "doj";
   static const String fieldGender = "gender";
   static const String fieldPhone = "phone";
+  static const String fieldBelt = "belt";
+  static const String fieldBatch = "batch";
+  static const String fieldRole = "role";
   
   // Storage (if needed later)
   static const String profileImagesPath = "profile_images";

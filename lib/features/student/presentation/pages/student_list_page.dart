@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:n_stars_notebook/features/student/presentation/bloc/student_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:n_stars_notebook/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:n_stars_notebook/features/auth/presentation/bloc/auth_event.dart';
 
 
 
@@ -22,6 +24,12 @@ class StudentListPage extends StatelessWidget {
               icon: const Icon(Icons.refresh),
               onPressed: () {
                 context.read<StudentBloc>().add(LoadStudents());
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () {
+                context.read<AuthBloc>().add(AuthLogoutRequested());
               },
             ),
           ],

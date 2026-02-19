@@ -10,11 +10,18 @@ import 'package:n_stars_notebook/features/student/data/repositories/fee_reposito
 import 'package:n_stars_notebook/features/student/domain/repositories/fee_repository.dart';
 import 'package:n_stars_notebook/features/student/domain/usecases/fee_usecases.dart';
 import 'package:n_stars_notebook/features/student/presentation/bloc/fee_bloc.dart';
+import 'package:n_stars_notebook/features/auth/domain/repositories/auth_repository.dart';
+import 'package:n_stars_notebook/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:n_stars_notebook/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final sl = GetIt.instance;
 
 Future<void> init() async {
-  // Features - Student
+  // External
+  final sharedPreferences = await SharedPreferences.getInstance();
+  sl.registerLazySingleton(() => sharedPreferences);
+  sl.registerLazySingleton(() => SupabaseConfig.client);
   // Bloc
   sl.registerFactory(
         () => StudentBloc(
@@ -34,6 +41,8 @@ Future<void> init() async {
       deleteFeeUseCase: sl(),
     ),
   );
+  
+  sl.registerLazySingleton(() => AuthBloc(authRepository: sl()));
 
   // Use cases
   sl.registerLazySingleton(() => GetStudents(sl()));
@@ -53,6 +62,10 @@ Future<void> init() async {
   sl.registerLazySingleton<FeeRepository>(
         () => FeeRepositoryImpl(remoteDataSource: sl()),
   );
+  
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(supabase: sl(), prefs: sl()),
+  );
 
   // Data sources
   sl.registerLazySingleton<StudentRemoteDataSource>(
@@ -61,7 +74,4 @@ Future<void> init() async {
   sl.registerLazySingleton<FeeRemoteDataSource>(
         () => FeeRemoteDataSourceImpl(supabase: sl()),
   );
-
-  // External
-  sl.registerLazySingleton(() => SupabaseConfig.client);
 }

@@ -23,7 +23,11 @@ class AddEditStudentPage extends StatefulWidget {
 class _AddEditStudentPageState extends State<AddEditStudentPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
+  late TextEditingController _uidController;
   late TextEditingController _phoneController;
+  String? _selectedBelt;
+  String? _selectedBatchDay;
+  String? _selectedBatchTime;
   String? _selectedGender;
   late TextEditingController _dojController;
   final DateFormat _dateFormat = DateFormat('yyyy-MM-dd');
@@ -33,11 +37,31 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
   bool _isUploading = false;
   final double _maxFileSizeMB = 2.0;
 
+  final List<String> _belts = [
+    'White', 'Yellow', 'Green', 'Green-1', 'Blue', 'Blue-1', 'Red', 'Red-1', 'Black'
+  ];
+
+  final Map<String, List<String>> _batchOptions = {
+    'Mon-Wed-Fri': ['5pm', '6pm', '7pm', '8pm'],
+    'Tue-Thurs-Sat': ['9 am', '5pm', '6pm', '7pm'],
+    'Sat-Sun': ['9 am', '10 am'],
+  };
+
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.student?.name ?? '');
+    _uidController = TextEditingController(text: widget.student?.uid ?? '');
     _phoneController = TextEditingController(text: widget.student?.phone ?? '');
+    _selectedBelt = widget.student?.belt;
+    
+    // Parse batch if exists: "Day (Time)"
+    if (widget.student?.batch != null && widget.student!.batch.contains('(')) {
+      final parts = widget.student!.batch.split(' (');
+      _selectedBatchDay = parts[0];
+      _selectedBatchTime = parts[1].replaceAll(')', '');
+    }
+
     _selectedGender = widget.student?.gender;
     _dojController = TextEditingController(text: widget.student?.doj ?? '');
     _currentImageUrl = widget.student?.profileImageUrl;
@@ -46,6 +70,7 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _uidController.dispose();
     _phoneController.dispose();
     _dojController.dispose();
     super.dispose();
@@ -178,6 +203,13 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
+                        controller: _uidController,
+                        label: 'Student UID',
+                        icon: Icons.fingerprint,
+                        validator: (value) => value!.isEmpty ? 'Please enter a UID' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTextField(
                         controller: _phoneController,
                         label: 'Phone',
                         icon: Icons.phone,
@@ -198,7 +230,7 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        initialValue: _selectedGender,
+                        value: (['Male', 'Female', 'Other'].contains(_selectedGender) ? _selectedGender : null),
                         decoration: InputDecoration(
                           labelText: 'Gender',
                           prefixIcon: const Icon(Icons.wc),
@@ -211,9 +243,82 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
                           );
                         }).toList(),
                         onChanged: (newValue) {
-                          _selectedGender = newValue;
+                          setState(() {
+                            _selectedGender = newValue;
+                          });
                         },
                         validator: (value) => value == null ? 'Please select gender' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _belts.contains(_selectedBelt) ? _selectedBelt : null,
+                        decoration: InputDecoration(
+                          labelText: 'Belt',
+                          prefixIcon: const Icon(Icons.workspace_premium),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        items: _belts.map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        onChanged: (newValue) {
+                          setState(() {
+                            _selectedBelt = newValue;
+                          });
+                        },
+                        validator: (value) => value == null ? 'Please select belt' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      // Batch Days Dropdown
+                      DropdownButtonFormField<String>(
+                        value: _batchOptions.containsKey(_selectedBatchDay) ? _selectedBatchDay : null,
+                        decoration: InputDecoration(
+                          labelText: 'Batch Days',
+                          prefixIcon: const Icon(Icons.calendar_view_week),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        items: _batchOptions.keys.map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        onChanged: (newValue) {
+                          setState(() {
+                            _selectedBatchDay = newValue;
+                            _selectedBatchTime = null; // Reset time when day changes
+                          });
+                        },
+                        validator: (value) => value == null ? 'Please select batch days' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      // Batch Time Dropdown
+                      DropdownButtonFormField<String>(
+                        value: (_selectedBatchDay != null && 
+                                _batchOptions.containsKey(_selectedBatchDay) && 
+                                _batchOptions[_selectedBatchDay]!.contains(_selectedBatchTime)) 
+                                ? _selectedBatchTime : null,
+                        decoration: InputDecoration(
+                          labelText: 'Batch Time',
+                          prefixIcon: const Icon(Icons.access_time),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        items: (_selectedBatchDay != null && _batchOptions.containsKey(_selectedBatchDay)
+                              ? _batchOptions[_selectedBatchDay]! 
+                              : <String>[]).map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        onChanged: (newValue) {
+                          setState(() {
+                            _selectedBatchTime = newValue;
+                          });
+                        },
+                        validator: (value) => value == null ? 'Please select batch time' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -237,6 +342,7 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
                             try {
                               String? imageUrl = _currentImageUrl;
                               final String studentId = widget.student?.id ?? const Uuid().v4();
+                              final String studentUid = _uidController.text.trim();
 
                               if (_selectedImage != null) {
                                 final bytes = await _selectedImage!.readAsBytes();
@@ -250,10 +356,14 @@ class _AddEditStudentPageState extends State<AddEditStudentPage> {
 
                               final student = Student(
                                 id: studentId,
+                                uid: studentUid,
                                 name: _nameController.text,
                                 phone: _phoneController.text,
                                 gender: _selectedGender ?? '',
                                 doj: _dojController.text,
+                                belt: _selectedBelt ?? '',
+                                batch: '$_selectedBatchDay ($_selectedBatchTime)',
+                                role: 'student', // Default role for added students
                                 profileImageUrl: imageUrl,
                               );
 
